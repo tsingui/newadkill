@@ -23,6 +23,10 @@
 #define _ADV_PROC_H_
 
 #include <linux/kernel.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION (3, 10, 0))
+#include <linux/fs.h>
+#include <linux/seq_file.h>
+#endif
 #include <linux/proc_fs.h>
 #include <linux/string.h>
 #include <linux/vmalloc.h>

@@ -10,7 +10,7 @@
 抓取数据包并根据预配置规则进行匹配，若匹配到再根据预配置规则进行
 一系列预定义操作。
 */
-#include <linux/slab.h>
+
 #include <linux/netfilter.h>
 #include <linux/netfilter_ipv4.h>
 #include <linux/netfilter_bridge.h>
@@ -28,7 +28,7 @@
 #include <linux/in.h>
 #include <linux/module.h>
 #include <linux/sched.h>   //wake_up_process()
-#include <linux/kthread.h> 
+#include <linux/kthread.h>
 
 #include "advkill.h"
 #include "strcmd.h"
@@ -182,16 +182,28 @@ netfilter注册钩子函数，函数原型为内核确定
 
 在该钩子函数内进行去广告业务处理。
 */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION (3, 13, 0))
 unsigned int hook_func(	unsigned int hooknum,
 						struct sk_buff **skb,
 						const struct net_device *in,
 						const struct net_device *out,
 						int (*okfn)(struct sk_buff *)
 						)
+#else
+unsigned int hook_func(const struct nf_hook_ops *ops,
+				struct sk_buff *skb,
+				const struct net_device *in,
+				const struct net_device *out,
+				int (*okfn)(struct sk_buff *))
+#endif
 {
 	struct iphdr *iph = NULL;
 	struct tcphdr *tcph = NULL;
+#if (LINUX_VERSION_CODE < KERNEL_VERSION (3, 13, 0))
 	struct sk_buff *sb = *skb;
+#else
+	struct sk_buff *sb = skb;
+#endif
 	char *httpcontent = NULL;
 	int httpcontentlen = 0;
 	char *shost = NULL;
@@ -430,8 +442,12 @@ static struct nf_hook_ops nfho_forward =
 {
 	.hook		= hook_func,
 	.owner		= THIS_MODULE,
-	.pf			= PF_INET,
+	.pf		= PF_INET,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION (2, 6, 26))
 	.hooknum	= NF_IP_FORWARD,
+#else
+	.hooknum	= NF_INET_FORWARD,
+#endif
 	.priority	= NF_IP_PRI_FIRST,
 };
 

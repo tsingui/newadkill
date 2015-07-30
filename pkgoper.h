@@ -43,8 +43,8 @@
 #define HTTP_FIND_LOCAL_STR_LEN								51
 
 /* lan interface */
-#define ETH_CLIENT_LAN0									"eth1"
-#define ETH_CLIENT_LAN1									"eth1"
+#define ETH_CLIENT_LAN0									"br-lan"
+#define ETH_CLIENT_LAN1									"br-lan"
 
 /* wlan interface */
 #define ETH_CLIENT_WLAN0								"vlan0"

@@ -12,10 +12,12 @@
 #ifndef _ADV_KILL_H_
 #define _ADV_KILL_H_
 
+#include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/mm.h>
 #include <linux/string.h>
 #include <linux/list.h>
+#include <linux/version.h>
 
 #define _BO_TONG_								1
 

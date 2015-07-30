@@ -100,6 +100,7 @@ struct sk_buff *pkg_skbuff_generate(struct sk_buff *skb, struct client_nicname *
 	struct tcphdr *tcph = NULL,*new_tcph = NULL;
 	struct ethhdr *ethdr = NULL;
 	char *newpdata = NULL;
+	unsigned char * mac_header_addr = NULL;
 	int i = 0;
 
 	if(!skb || !names)
@@ -124,10 +125,10 @@ struct sk_buff *pkg_skbuff_generate(struct sk_buff *skb, struct client_nicname *
 
 	for (i=0; names[i].index != -1; i++)
 	{
-#ifndef _BO_TONG_
-		dev = dev_get_by_name(&init_net, names[i].name);
-#else
+#if (LINUX_VERSION_CODE < KERNEL_VERSION (2, 6, 24))//不确定版本号是否应该更早
 		dev = dev_get_by_name(names[i].name);
+#else
+		dev = dev_get_by_name(&init_net, names[i].name);
 #endif
 		if (dev != NULL)
 			break;
@@ -143,7 +144,7 @@ struct sk_buff *pkg_skbuff_generate(struct sk_buff *skb, struct client_nicname *
 	{
 		goto out;    
 	}    
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION (3, 11, 0))
 	new_skb->mac_header = new_skb->data;
 	skb_reserve(new_skb,14);
 	new_skb->transport_header = new_skb->data;
@@ -154,10 +155,27 @@ struct sk_buff *pkg_skbuff_generate(struct sk_buff *skb, struct client_nicname *
 	memcpy(&new_skb->mac_header[6], ethdr->h_dest, 6);
 	new_skb->mac_header[12] = 0x08;
 	new_skb->mac_header[13] = 0x00;
+#else
+	skb_reset_mac_header(new_skb);
+	skb_reserve(new_skb,14);
+	skb_reset_transport_header(new_skb);
+	skb_reset_network_header(new_skb);
+
+	mac_header_addr=skb_mac_header(new_skb);
+	if(mac_header_addr==NULL)
+	{
+		printk("Can't get header address!\n");
+		goto out;
+	}
+	//get_route_mac(iph->saddr, iph->daddr);
+	memcpy(mac_header_addr, ethdr->h_source, 6);
+	memcpy(mac_header_addr+6, ethdr->h_dest, 6);
+	mac_header_addr[12] = 0x08;
+	mac_header_addr[13] = 0x00;
+#endif
 	skb_put(new_skb, iph->ihl*4 + tcph->doff*4);
 	new_skb->mac_len = 14;
-
-	new_skb->dev = dev;  
+	new_skb->dev = dev;
 	new_skb->pkt_type = PACKET_OTHERHOST;
 	new_skb->protocol = __constant_htons(ETH_P_IP);
 	new_skb->ip_summed = CHECKSUM_NONE;
@@ -178,7 +196,7 @@ struct sk_buff *pkg_skbuff_generate(struct sk_buff *skb, struct client_nicname *
 	new_iph->saddr = iph->daddr;
 	new_iph->daddr = iph->saddr;
 	new_iph->tot_len = htons(tcpdatalen + iph->ihl*4 + tcph->doff*4);
-	new_iph->check = 0;   
+	new_iph->check = 0;
 	/*
 	 *TCP set
 	 */
@@ -206,7 +224,6 @@ struct sk_buff *pkg_skbuff_generate(struct sk_buff *skb, struct client_nicname *
 		}
 	}
 	refresh_skb_checksum(new_skb);
-
 	return new_skb;
 out:
 	if (NULL != skb)
@@ -232,22 +249,24 @@ int pkg_skbuff_dev_xmit(struct sk_buff *skb, char *tcpdata, int tcpdatalen)
 	int ret = 0;
 
 	new_skb_lan = pkg_skbuff_generate(skb, lan_name, sizeof(lan_name)/sizeof(struct client_nicname), tcpdata, tcpdatalen);
-
 	new_skb_lan->data -= 14;
 	new_skb_lan->len  += 14;
-	if((ret = dev_queue_xmit(new_skb_lan)) != 0)
+	ret = dev_queue_xmit(new_skb_lan);
+	if(ret != 0)
 	{
 #ifdef ADVKILL_PRINT_DEBUG_INFO
 		printk(KERN_ALERT "dev queue xmit failed %d\n",ret);
 #endif
 		return ADV_KILL_FAIL;
 	}
+	#if 0
 	/* Wireless */
 	new_skb_wlan = pkg_skbuff_generate(skb, wlan_name, sizeof(wlan_name)/sizeof(struct client_nicname), tcpdata, tcpdatalen);
 	new_skb_wlan->data -= 14;
 	new_skb_wlan->len  += 14;
 	dev_queue_xmit(new_skb_wlan);
 
+	#endif
 	return ADV_KILL_OK;
 }
 

@@ -38,8 +38,11 @@ static char *advkillconfdata = NULL; ///< 内核中去广告配置缓冲区地�
 @param data 本接口对此没有操作，为内核函数参数格式
 @return 返回读取的长度
 */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION (3, 10, 0))
 static ssize_t advkill_conf_write( struct file *filp, const char __user *buff, unsigned long len, void *data);
-
+#else
+static ssize_t advkill_conf_write( struct file *filp, const char __user *buff, size_t len, loff_t *data);
+#endif
 /**
 从内核空间将去广告配置内存拷贝到用户空间
 
@@ -51,7 +54,9 @@ static ssize_t advkill_conf_write( struct file *filp, const char __user *buff, u
 @param data 本接口对此没有操作，为内核函数参数格式
 @return 返回写入的长度
 */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION (3, 10, 0))
 static int advkill_conf_read( char *page, char **start, off_t off, int count, int *eof, void *data);
+#endif
 
 /**
 从用户空间将数据读取到内核空间，解析后保存在哈希表中
@@ -62,7 +67,12 @@ static int advkill_conf_read( char *page, char **start, off_t off, int count, in
 @param data 本接口对此没有操作，为内核函数参数格式
 @return 返回读取的长度
 */
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION (3, 10, 0))
 static ssize_t advkill_conf_write( struct file *filp, const char __user *buff, unsigned long len, void *data)
+#else
+static ssize_t advkill_conf_write( struct file *filp, const char __user *buff, size_t len, loff_t *data)
+#endif
 {
 	int space_available = (MAX_ADVKILL_CONF_LEN-advkill_conf_index)+1;
 
@@ -72,7 +82,7 @@ static ssize_t advkill_conf_write( struct file *filp, const char __user *buff, u
 		advkill_conf_index = 0;
 		advkill_conf_next = 0;
 	}
-
+	if(advkill_conf_index>0)advkillconfdata[advkill_conf_index-1] = '\n';
 	if (copy_from_user(&advkillconfdata[advkill_conf_index], buff, len )) 
 	{
 		return -EFAULT;
@@ -102,6 +112,7 @@ static ssize_t advkill_conf_write( struct file *filp, const char __user *buff, u
 @param data 本接口对此没有操作，为内核函数参数格式
 @return 返回写入的长度
 */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION (3, 10, 0))
 static int advkill_conf_read( char *page, char **start, off_t off, int count, int *eof, void *data)
 {
 	int len;
@@ -119,7 +130,27 @@ static int advkill_conf_read( char *page, char **start, off_t off, int count, in
 
 	return len;
 }
+#else
+static int advkill_conf_seq_read(struct seq_file *seq, void *v)
+{
+	return seq_printf(seq, "%s\n", advkillconfdata);
+}
+static int advkill_conf_seq_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, advkill_conf_seq_read, NULL);
+}
+#endif
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION (3, 10, 0))
+static const struct file_operations advkill_fops = {
+	.owner = THIS_MODULE,
+	.open		= advkill_conf_seq_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.write 		= advkill_conf_write,
+	.release	= single_release,
+};
+#endif
 /**
 创建需要用到的proc文件
 
@@ -142,6 +173,7 @@ int create_proc_file(void)
 	}
 	else
 	{
+#if (LINUX_VERSION_CODE < KERNEL_VERSION (3, 10, 0))
 		proc_advkill_conf = create_proc_entry(ADV_KILL_PROC_FILE, 0644, proc_dir);
 		if (proc_advkill_conf == NULL)
 		{
@@ -151,6 +183,15 @@ int create_proc_file(void)
 		}
 		proc_advkill_conf->read_proc = advkill_conf_read;
 		proc_advkill_conf->write_proc = advkill_conf_write;
+#else
+		proc_advkill_conf = proc_create(ADV_KILL_PROC_FILE, 0644, proc_dir, &advkill_fops);
+		if (proc_advkill_conf == NULL)
+		{
+			printk(KERN_ERR "Couldn't create proc entry[/proc/%s/%s]\n", ADV_KILL_PROC_DIRECTORY, ADV_KILL_PROC_FILE);
+			ret = -ENOMEM;
+			goto exit_fail;
+		}
+#endif
 	}
 
 	return ret;
