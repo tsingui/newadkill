@@ -245,7 +245,6 @@ out:
 int pkg_skbuff_dev_xmit(struct sk_buff *skb, char *tcpdata, int tcpdatalen)
 {
 	struct sk_buff *new_skb_lan = NULL;
-	struct sk_buff *new_skb_wlan = NULL;
 	int ret = 0;
 
 	new_skb_lan = pkg_skbuff_generate(skb, lan_name, sizeof(lan_name)/sizeof(struct client_nicname), tcpdata, tcpdatalen);
@@ -259,14 +258,6 @@ int pkg_skbuff_dev_xmit(struct sk_buff *skb, char *tcpdata, int tcpdatalen)
 #endif
 		return ADV_KILL_FAIL;
 	}
-	#if 0
-	/* Wireless */
-	new_skb_wlan = pkg_skbuff_generate(skb, wlan_name, sizeof(wlan_name)/sizeof(struct client_nicname), tcpdata, tcpdatalen);
-	new_skb_wlan->data -= 14;
-	new_skb_wlan->len  += 14;
-	dev_queue_xmit(new_skb_wlan);
-
-	#endif
 	return ADV_KILL_OK;
 }
 
