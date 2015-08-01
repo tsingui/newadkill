@@ -12,11 +12,11 @@
 #ifndef _PKG_OPER_H_
 #define _PKG_OPER_H_
 
-#define HTTP_RESPONSE_HEAD_NOT_FIND							"HTTP/1.1 302 Found\r\n"
-#define HTTP_RESPONSE_HEAD_NOT_FIND_LEN						20
+#define HTTP_RESPONSE_HEAD_NOT_FIND							"HTTP/1.1 307 Temporary Redirect\r\n"
+#define HTTP_RESPONSE_HEAD_NOT_FIND_LEN							33
 #define HTTP_RESPONSE_LOCATION								"Location: "
 #define HTTP_RESPONSE_LOCATION_LEN							10
-#define HTTP_RESPONSE_END									"\r\n"
+#define HTTP_RESPONSE_END								"\r\n"
 #define HTTP_RESPONSE_END_LEN								2
 //#define HTTP_RESPONSE_CONNECTION							"Connection: closed"
 
