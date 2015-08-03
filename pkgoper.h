@@ -125,5 +125,17 @@ int send_client_bad_gateway(struct sk_buff *skb);
 */
 void refresh_skb_checksum(struct sk_buff *skb);
 
+/*
+ 发送伪造的HTTP200响应
+ @param skb 原始的sk_buff结构地址 CType Content-Type Cont 网页内容
+ @return 成功返回 ADV_KILL_OK，失败返回 ADV_KILL_FAIL。
+HTTP/1.1 200 OK\r\n
+Server: QWS\r\n
+Content-Type: text/xml\r\n
+Content-Length: 125\r\n
+Connection: close\r\n
+Accept-Ranges: bytes\r\n\r\n
+*/
+int send_client_fake_message(struct sk_buff *skb, const char * CType, const char * Cont);
 #endif
 

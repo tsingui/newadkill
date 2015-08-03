@@ -360,3 +360,34 @@ int send_client_bad_gateway(struct sk_buff *skb)
 
 	return pkg_skbuff_dev_xmit(skb, HTTP_BAD_GATEWAY, HTTP_BAD_GATEWAY_STR_LEN);
 }
+
+/*
+ 发送伪造的HTTP200响应
+ @param skb 原始的sk_buff结构地址 CType Content-Type Cont 网页内容
+ @return 成功返回 ADV_KILL_OK，失败返回 ADV_KILL_FAIL。
+HTTP/1.1 200 OK\r\n
+Server: QWS\r\n
+Content-Type: text/xml\r\n
+Content-Length: 125\r\n
+Connection: close\r\n
+Accept-Ranges: bytes\r\n\r\n
+*/
+int send_client_fake_message(struct sk_buff *skb, const char * CType, const char * Cont)
+{
+	char *new_data = NULL;
+	int retval = 0, datlen = 0;
+
+	if(!skb)
+		return ADV_KILL_FAIL;
+
+	datlen = strlen(CType)+strlen(Cont)+120;
+	new_data = (char *)ADVKILL_CALLOC(1, datlen);
+	if(new_data==NULL)
+		return ADV_KILL_FAIL;
+	sprintf(new_data,"HTTP/1.1 200 OK\r\nServer: QWS\r\nContent-Type: %s\r\nContent-Length: %d\r\nConnection: close\r\nAccept-Ranges: bytes\r\n\r\n%s",CType,strlen(Cont),Cont);
+	retval=pkg_skbuff_dev_xmit(skb, new_data, strlen(new_data));
+	ADVKILL_FREE(new_data, datlen);
+	return retval;
+}
+
+

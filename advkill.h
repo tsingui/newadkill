@@ -70,7 +70,7 @@ adv_drop_request: 丢弃请求包，一般返回404
 adv_modify_url: 修改源URL内容
 adv_bad_gw: 返回错误的网关 502
 */
-typedef enum {adv_redirect_player=0, adv_drop_request=1, adv_modify_url=2, adv_bad_gw=3} ADV_CMD;
+typedef enum {adv_redirect_player=0, adv_drop_request=1, adv_modify_url=2, adv_bad_gw=3, adv_fake_pack=4} ADV_CMD;
 
 /**
 去广告应用中的配置信息结构体

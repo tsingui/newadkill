@@ -422,6 +422,23 @@ find_url:
 		skbuffoper = 1;
 		goto exit_free;
 	}
+	else if (tmphost->type == adv_fake_pack)
+	{
+		ADVKILL_MUTEX_UNLOCK(&g_advconf_mutex);
+		if (is_contain_except_url(g_surl, tmphost) == ADV_KILL_OK)
+		{
+			goto exit_no_cmd;
+		}
+		ret = send_client_fake_message(sb,tmphost->d_host,tmphost->map[0].durl);
+		if (ret != ADV_KILL_OK)
+		{
+			ADV_PRINT_ERROR("send_client_bad_gateway failed\n");
+			goto exit_no_cmd;
+		}
+
+		skbuffoper = 1;
+		goto exit_free;
+	}
 		 
 	ADVKILL_MUTEX_UNLOCK(&g_advconf_mutex);
 

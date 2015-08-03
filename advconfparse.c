@@ -57,7 +57,7 @@ static int get_advconf_line_data(char *linedata, struct adv_conf_data *data)
 
 	while (*tmpdata != '\n' && *tmpdata != '\0')
 	{
-		if ( *tmpdata == ADV_CONF_DATA_SEPC_CHAR)
+		if (( *tmpdata == ADV_CONF_DATA_SEPC_CHAR )&&( sepnum<5 ))
 		{
 			sepnum++;
 			index = 0;
@@ -112,6 +112,8 @@ static int get_oper_flag(char oper)
 		return adv_modify_url;
 	case ADV_CONF_BAD_GW:
 		return adv_bad_gw;
+	case ADV_CONF_FAKE_PACK:
+		return adv_fake_pack;
 	default:
 		return adv_redirect_player;
 	}
@@ -247,9 +249,32 @@ static int parse_advconf_node_from_adv_conf_data(struct adv_conf_data *data, str
 	}
 	strcpy(tmpnode->d_host, data->field5);
 	//surl durl
-	if (parse_advconf_url(data, tmpnode) != ADV_KILL_OK)
+	if(tmpnode->type != adv_fake_pack)
 	{
-		goto exit_fail;
+		if (parse_advconf_url(data, tmpnode) != ADV_KILL_OK)
+		{
+			goto exit_fail;
+		}
+	} else {
+		tmpnode->mapnum = 1;
+		tmpnode->map = (struct advconf_hostmap *)ADVKILL_CALLOC(1, sizeof(struct advconf_hostmap));
+		tmpnode->map[0].surllen = strlen(data->field4);
+		tmpnode->map[0].surl = (char *)ADVKILL_CALLOC(1, tmpnode->map[0].surllen+1);
+		if (tmpnode->map[0].surl == NULL)
+		{
+			ADVKILL_FREE(tmpnode->map, sizeof(struct advconf_hostmap));
+			return ADV_KILL_FAIL;
+		}
+		memcpy(tmpnode->map[0].surl, data->field4, tmpnode->map[0].surllen);
+		tmpnode->map[0].durllen = strlen(data->field6);
+		tmpnode->map[0].durl = (char *)ADVKILL_CALLOC(1, tmpnode->map[0].durllen+1);
+		if (tmpnode->map[0].durl == NULL)
+		{
+			ADVKILL_FREE(tmpnode->map[0].surl, tmpnode->map[0].surllen+1);
+			ADVKILL_FREE(tmpnode->map, sizeof(struct advconf_hostmap));
+			return ADV_KILL_FAIL;
+		}
+		memcpy(tmpnode->map[0].durl, data->field6, tmpnode->map[0].durllen);
 	}
 	*node = tmpnode;
 	return ADV_KILL_OK;

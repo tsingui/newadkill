@@ -25,6 +25,7 @@
 #define ADV_CONF_DROP_REQUEST					'D'		///< drop模式 404
 #define ADV_CONF_MODIFY_URL						'M'		///< 修改源数据包
 #define ADV_CONF_BAD_GW							'G'		///< 网关错误 502
+#define ADV_CONF_FAKE_PACK						'F'		///< 发送伪造数据包
 
 /**
 解析一行配置，解析完成后配置存放在结构体 advconf_hashtable 里
